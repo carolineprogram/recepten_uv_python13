@@ -1,0 +1,10 @@
+[project]
+name = "recepten-uv-python13"
+version = "0.1.0"
+description = "Add your description here"
+requires-python = ">=3.13"
+dependencies = [
+    "st-supabase-connection>=2.0.1",
+    "streamlit>=1.45.1",
+    "streamlit-tags>=1.2.8",
+]
