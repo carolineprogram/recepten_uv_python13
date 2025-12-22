@@ -1,31 +1,33 @@
 #This file contains utility functions for fetching data.
 #from db import run_query
 import streamlit as st
-from pages.test_supabase import run_query
-#TODO: tabel recepten_type is gewijzigd in recepten_Recepttype
+
+from run_query import run_query
+from loguru import logger
 #TODO: tabel recepten_IngredientBeschikbaar gemaakt - en kolommen 'hele_jaar' en maanden 'jan -> dec' gewist.
-#TODO: tabel recepten_ingredient naar recepten_Ingredient
 """
 SELECT-queries
     bouw query op:
     - query is type query (select, update, insert, delete)
     - data is een list
     - where is een dictionary
+    - in_ in een tuple
+    - distinct is enkel een opdracht (geen input nodig)
     - order is string
 """
 
 
 def get_recipe_w_recipe_name(recipe_name):
     """
-    Equivalent to "SELECT recept_id, Beschrijving, Bron, Gemaakt, Locatie FROM recepten_recepten WHERE Naam = %s"
+    Equivalent to "SELECT recept_id, Beschrijving, Bron, Gemaakt, Locatie, Link FROM recepten_Recepten WHERE Naam = %s"
     """
-    return run_query("select", "recepten_Recepten", ["recept_id", "Beschrijving", "Bron", "Gemaakt", "Locatie"], where = {"Naam": recipe_name})
+    return run_query("select", "recepten_Recepten", ["recept_id", "Beschrijving", "Bron", "Gemaakt", "Locatie", "Link"], where = {"Naam": recipe_name})
 
 def get_recipe_w_recipe_id(recipe_id):
     """
-    Equivalent to query = "SELECT Naam, Beschrijving, Bron, Gemaakt, Locatie FROM recepten_recepten WHERE recept_id = %s ORDER BY Naam"
+    Equivalent to query = "SELECT Naam, Beschrijving, Bron, Gemaakt, Locatie, Link FROM recepten_recepten WHERE recept_id = %s ORDER BY Naam"
     """
-    return run_query("select", "recepten_Recepten", ["recept_id", "Naam", "Beschrijving", "Bron", "Gemaakt", "Locatie"], where = {"recept_id": recipe_id}, order="Naam")
+    return run_query("select", "recepten_Recepten", ["recept_id", "Naam", "Beschrijving", "Bron", "Gemaakt", "Locatie", "Link"], where = {"recept_id": recipe_id}, order="Naam")
 
 def get_recipe_id_w_type_id(type_id):
     """
@@ -38,6 +40,24 @@ def get_all_recipe_names():
     Equivalent to "SELECT recept_id, Naam FROM recepten_recepten ORDER BY Naam"
     """
     return run_query("select", "recepten_Recepten", ["recept_id", "Naam"], order="Naam")
+
+def get_recipes_with_ingredient_ids(ingredient_ids):
+    """
+    Equivalent voor SELECT rec.* FROM "recepten_Recepten" as rec LEFT JOIN "recepten_Recept_Ingredient" as RI ON rec.recept_id = RI.recept_id WHERE RI.ingredient_id IN (13, 14, 23, 27)"
+    """
+    recipes = []
+    for i in ingredient_ids:
+        recipes_all = run_query("select", "recepten_Recepten, recepten_Recept_Ingredient",["*"], where = {"recepten_Recept_Ingredient.ingredient_id": i})
+        recipes.append((recipes_all))
+    return recipes
+    #     recipe_ids_query = run_query(query, (ingredient_id,))
+    #     recipe_ids.append([id for recipe_ids_query[0] in recipe_ids_query for id in recipe_ids_query[0]])
+
+    pass
+
+def get_recipes_w_bron_id(bron_id):
+    return run_query("select", "recepten_Recepten", ["*"], where = {"Bron": bron_id})
+
 
 
 def get_types_w_recipe_id(recipe_id):
@@ -52,12 +72,11 @@ def get_types_w_recipe_id(recipe_id):
     types = []
 
     if types_ids.data and isinstance(types_ids.data, list) and len(types_ids.data) > 0:
-        type_id =  types_ids.data[0].get("type_id")  # Get 'type_id' from the first element
-        """
-        Equivalent to "SELECT * FROM recepten_Recepttype WHERE type_id =type_id)
-        """
-        type_details = run_query("select", "recepten_Recepttype", where={"type_id": type_id})
-        if type_details:
+        for i in types_ids.data:
+            """
+            Equivalent to "SELECT * FROM recepten_Recepttype WHERE type_id =type_id)
+            """
+            type_details = run_query("select", "recepten_Recepttype", where={"type_id": i["type_id"]})
             types.append(type_details.data[0].get("type"))
     else:
         st.write("Probleem: geen type_id toegekend aan dit recept in recepten_Recept_Type")
@@ -68,9 +87,9 @@ def get_type_id(type_naam):
     """
     Equivalent to "SELECT type_id FROM type WHERE type = type_naam"
     """
-    rows = run_query("select", "recepten_Recepttype", where={"type_naam": type_naam})
+    rows = run_query("select", "recepten_Recepttype", where={"type": type_naam})
     if rows:
-        return rows[0][0]  # Return the first ingredient_id found
+        return rows.data[0]  # Return the first ingredient_id found
     else:
         return None  # Return None if ingredient not found
 
@@ -80,9 +99,19 @@ def get_all_types():
     """
     return run_query("select", "recepten_Recepttype", ["type_id", "type"], order="type")
 
+def get_ingredienttype(type_id):
+    """
+    Equivalent to "SELECT type FROM recepten_Ingredienttype WHERE type_id = type_id"
+    """
+    rows = run_query("select", "recepten_Ingredienttype", where={"type_id": type_id})
+    if rows:
+        return rows.data[0]["type"]  # Return the first ingredient_id found
+    else:
+        return None  # Return None if ingredient not found
+
 def get_ingredients(recipe_id):
     """
-    Equivalent to "SELECT ingredient_id FROM recepten_MtM_recept_ingredient WHERE recept_id = recipe_id"
+    Equivalent to "SELECT ingredient_id FROM recepten_Recept_Ingredient WHERE recept_id = recipe_id"
     """
     ingredient_ids = run_query("select", "recepten_Recept_Ingredient", ["ingredient_id"],
                                where={"recept_id": recipe_id}, order="ingredient_id")
@@ -94,17 +123,19 @@ def get_ingredients(recipe_id):
         Equivalent to "SELECT * FROM recepten_Ingredient WHERE ingredient_id = ingredient_id"
         """
         ingredient_details = run_query("select", "recepten_Ingredient", "*", where={"ingredient_id": ingredient_id})
-        for j in ingredient_details.data:
-            ingredients.append(j)
-
+        try:
+            for j in ingredient_details.data:
+                ingredients.append(j)
+        except:
+            ingredients = []
     return ingredients
 
 def get_all_ingredients():
     """
     SELECT ingredient_id, ingredient, type FROM recepten_Ingredient ORDER BY ingredient"
     """
-    return [(row[0]) for row in run_query("select", "recepten_Ingredient", "*")]
-    #return [(row[1], row[2]) for row in run_query("select", "recepten_Ingredient", ["ingredient_id, ingredient, type"], order="ingredient")]
+    return run_query("select", "recepten_Ingredient", "*").data
+
 
 def get_all_ingredients_in_month(month):
     """
@@ -113,21 +144,31 @@ def get_all_ingredients_in_month(month):
     return [(row[1], row[2]) for row in run_query("select", "recepten_IngredientBeschikbaar", ["ingredient_id"], [("maand", month)])]
 
 def get_ingredient_id(ingredient_naam):
-    """SELECT ingredient_id FROM ingredient WHERE ingredient = %s"
     """
-    return [(row[0]) for row in run_query("select", "recepten_Ingredient", ["ingredient_id"])]
-    if rows:
-        return rows[0][0]  # Return the first ingredient_id found
-    else:
-        return None  # Return None if ingredient not found
+    SELECT ingredient_id FROM ingredient WHERE ingredient = %s
+    """
+    return run_query("select", "recepten_Ingredient", ["ingredient_id"], {"ingredient": ingredient_naam}).data
+
+def get_ingredient_naam(ingredient_id):
+    """
+    SELECT ingredient FROM ingredient WHERE ingredient_id = %s
+    """
+    return run_query("select", "recepten_Ingredient", ["ingredient_id", "ingredient"], {"ingredient_id": ingredient_id}).data
+
 def get_all_type_ingredients():
     """
     SELECT DISTINCT type FROM ingredient ORDER BY type
     SELECT DISTINCT bestaat niet in PostGRES -> gebruik daarom gewone select en filter dan dubbel uit met set()
     """
-    result =  [row[0] for row in run_query("select", "recepten_Recepttype, "["type"])]
+    result =  [row[0] for row in run_query("select", "recepten_Recepttype", ["type"])]
 
     return set(result)
+
+def get_all_receptbron():
+    """
+    Equivalent to "SELECT type_id, type FROM recepten_Recepttype ORDER BY type"
+    """
+    return run_query("select", "recepten_Receptbron", ["bron_id", "bron"], order="bron")
 
 
 
@@ -150,31 +191,35 @@ except Exception as exception:
     return exception
 """
 
-def insert_recipe(data):
+def insert_recipe(new_title, new_beschrijving, new_bron, new_locatie, new_link, new_gemaakt):
     """
     Equivalent voor "INSERT INTO recepten_recepten (Naam, Beschrijving, Bron, Gemaakt, Locatie) VALUES (name, description, source, made, location)"
     """
+    data = [{"Naam": new_title, "Beschrijving": new_beschrijving, "Bron": new_bron, "Locatie": new_locatie, "Link": new_link, "Gemaakt": new_gemaakt}]
+
     return run_query("insert", "recepten_Recepten", data)
 
 def insert_types_for_recipe(type_list, recipe_id):
+    data = []
     for i in type_list:
-        query = "INSERT INTO MtM_recept_type (recept_id, type_id) VALUES (%s, %s)"
-        params = (recipe_id, i)
-        return run_query(query, tabel, dict)
+        #Equivalent voor "INSERT INTO MtM_recept_type (recept_id, type_id) VALUES (%s, %s)"
+        nieuwe_data = {"recept_id": recipe_id, "type_id": i['type_id']}
+        data.append(nieuwe_data)
 
+    return run_query("insert", "recepten_Recept_Type", data)
 
 def insert_ingredients_for_recipe(ingredient_list, recipe_id):
     for i in ingredient_list:
-        print(i)
-        query = "INSERT INTO MtM_recept_ingredient (recept_id, ingredient_id) VALUES (%s, %s)"
-        params = (recipe_id, i)
-        run_query(query, params)
+        data = [{"recept_id": recipe_id, "ingredient_id": i}]
+        run_query("insert", "recepten_Recept_Ingredient", data)
     return True
 
 def insert_new_ingredients(ingredient_name):
-    query = "INSERT INTO ingredient (ingredient) VALUES (%s)"
-    params = (ingredient_name, )
-    return run_query(query, tabel, dict)
+    """
+    Equivalent voor query = "INSERT INTO ingredient (ingredient) VALUES (%s)"
+    """
+    data = [{"ingredient": ingredient_name}]
+    return run_query("insert", "recepten_Ingredient", data)
 #TODO: zorg dat je type kan ingeven met dropdowmenu
 
 """
@@ -184,31 +229,38 @@ DELETE-queries
 
 def delete_ingredients(ingredient_list, recipe_id):
     for i in ingredient_list:
+        """
         query = "DELETE FROM MtM_recept_ingredient WHERE recept_id = (%s) AND ingredient_id = (%s)"
-        params = (recipe_id, i)
-        return run_query(query, tabel, dict)
+        """
+        data = {"recept_id": recipe_id, "ingredient_id": i}
+        run_query("delete", "recepten_Recept_Ingredient", where=data)
 
-def delete_types(type_list, recipe_id):
+def delete_types_for_recipe(type_list, recipe_id):
     for i in type_list:
-        query = "DELETE FROM MtM_recept_type WHERE recept_id = (%s) AND type_id = (%s)"
-        params = (recipe_id, i)
-        return run_query(query, tabel, dict)
+        #query = "DELETE FROM MtM_recept_type WHERE recept_id = (%s) AND type_id = (%s)"
+        data = {"recept_id": recipe_id, "type_id": i['type_id']}
+        run_query("delete", "recepten_Recept_Type", where=data)
 
 """
 UPDATE-queries
 """
 
-def update_recipe(recipe_id, title, beschrijving, bron, gemaakt, locatie):
-    query = "UPDATE recepten SET Naam = %s, Beschrijving = %s, Bron = %s, Gemaakt = %s, Locatie = %s WHERE recept_id = %s"
-    params = (title, beschrijving, bron, gemaakt, locatie, recipe_id)
-    return run_query(query, tabel, dict)
+def update_recipe(recipe_id, title, beschrijving, bron, locatie, link, gemaakt):
+    data = {
+        "Naam": title,
+        "Beschrijving": beschrijving,
+        "Bron": bron,
+        "Locatie": locatie,
+        "Link": link,
+        "Gemaakt": gemaakt
+    }
+    return run_query("update", "recepten_Recepten", data, {"recept_id": recipe_id})
 
 def update_types(old_types, new_types, recipe_id):
     unchanged_types = [item for item in old_types if item in new_types]
     todelete_types = [item for item in old_types if item not in unchanged_types]
     todelete_types_ids = [get_type_id(item) for item in todelete_types]
     insert_types = [item for item in new_types if item not in unchanged_types]
-
     insert_types_ids = []
     for type in insert_types:
         try:
@@ -218,24 +270,30 @@ def update_types(old_types, new_types, recipe_id):
             st.text(f"Error bij update_types - type_id: {e}")
 
     if todelete_types_ids:
-        delete_types(todelete_types_ids, recipe_id)
+        try:
+            delete_types_for_recipe(todelete_types_ids, recipe_id)
+        except Exception as e:
+            st.text(f"Geen types gewist - error: {e}")
     if insert_types_ids:
-        insert_types_for_recipe(insert_types_ids, recipe_id)
-
+        try:
+            insert_types_for_recipe(insert_types_ids, recipe_id)
+        except Exception as e:
+            st.text(f"Geen types ingevoerd - error: {e}")
 
 def update_ingredients(old_ingredients, new_ingredients, recipe_id):
     unchanged_ingredients = [item for item in old_ingredients if item in new_ingredients]
     todelete_ingredients = [item for item in old_ingredients if item not in unchanged_ingredients]
-    todelete_ingredients_ids = [get_ingredient_id(item) for item in todelete_ingredients]
+    todelete_ingredients_ids = [get_ingredient_id(item)[0].get("ingredient_id") for item in todelete_ingredients]
     insert_ingredients = [item for item in new_ingredients if item not in unchanged_ingredients]
 
+
     insert_ingredients_ids = []
-    for ingredient in insert_ingredients:
-        ingredient_id = get_ingredient_id(ingredient)
+    for i in insert_ingredients:
+        ingredient_id = get_ingredient_id(i)
         if ingredient_id:
-            insert_ingredients_ids.append(ingredient_id)
+            insert_ingredients_ids.append(ingredient_id[0].get("ingredient_id") )
         else:
-            ingredient_id = insert_new_ingredients(ingredient)
+            ingredient_id = insert_new_ingredients(i).data[0].get("ingredient_id")
             insert_ingredients_ids.append(ingredient_id)
 
     if todelete_ingredients_ids:
