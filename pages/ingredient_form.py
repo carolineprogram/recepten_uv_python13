@@ -1,25 +1,17 @@
 #This file contains the form to select by ingredient.
 import pandas as pd
-import numpy as np
 import streamlit as st
-from pandas.core.dtypes.inference import is_float
-from pandas.util import capitalize_first_letter
+
 from loguru import logger
 
 from utils import get_all_ingredients, get_ingredienttype, get_ingredient_naam, get_recipes_with_ingredient_ids
-
-def maak_weekmenu(recipe):
-    if 'weekmenu_lijst' not in st.session_state:
-        st.session_state.weekmenu_lijst = [recipe]
-    else:
-        st.session_state.weekmenu_lijst.append(recipe)
 
 @logger.catch
 def select_ingredient(ingredients_this_month=None):
     # wanneer ingeroepen vanuit maak_weekmenu.py
     if ingredients_this_month:
        ingredients = ingredients_this_month
-       st.session_state.weekmenu = True
+
     # wanneer reload is na klikken op button Toevoegen van een recept
     elif ingredients_this_month in st.session_state:
         ingredients = st.session_state.ingredients_this_month
@@ -27,7 +19,7 @@ def select_ingredient(ingredients_this_month=None):
     else:
         ingredients = get_all_ingredients()
 
-    # 1. Find the dictionary with the max ingredient_id
+    # 1. Find the dictionary with the max ingredient_id - nodig om de kolommen van layout te maken
     max_item = max(ingredients, key=lambda item: item['ingredient_id'])
     # 2. Extract the ingredient_id from that dictionary
     highest_id = max_item['ingredient_id']
@@ -48,11 +40,11 @@ def select_ingredient(ingredients_this_month=None):
     with st.form(key="Select Ingredient", clear_on_submit=True):
         col_count = 3
         for type_id, df in dfs.items():
-            if isinstance(type_id, float):
+            if isinstance(type_id, (int, float)):
                 type_name = get_ingredienttype(int(type_id))
             else:
                 type_name = 'Geen type'
-            st.subheader(capitalize_first_letter(type_name))
+            st.subheader(type_name.str.capitalize())
             cols = st.columns(col_count)
             for k in range(len(df)):
                 col_index = k % col_count
@@ -61,18 +53,29 @@ def select_ingredient(ingredients_this_month=None):
             st.divider()
         submitted = st.form_submit_button("Submit")
 
-
     #deze code wordt enkel uitgevoerd als je op submit van de form van de ingredienten hebt geklikt
     if submitted:
         ingredient_ids = [index for index, is_checked in enumerate(checkbox_states) if is_checked == True]
-        logger.info(ingredient_ids)
+        aantal_ingredients_checked = len(ingredient_ids)
         recipe_ids = []
         recipes = get_recipes_with_ingredient_ids(ingredient_ids)
-        logger.info(recipes)
+        st.write(recipes)
+
+        recipes_m_aantal_ingr = []
+        aantal_ingredients = aantal_ingredients_checked
+        logger.info(aantal_ingredients)
+        while aantal_ingredients > 0:
+            recipes_m_aantal_ingr[aantal_ingredients] = [i for i in recipes if len(i[7]) == aantal_ingredients]
+            aantal_ingredients -= 1
+            logger.info(aantal_ingredients)
+
         for ingredient_id in ingredient_ids:
             ingredient_naam = get_ingredient_naam(ingredient_id)
             logger.info(ingredient_naam[0]['ingredient'])
             #TODO1: zoek recepten waar alle ingredienten inzitten
+
+
+
             #TODO2: zoek per ingredient recepten en sluit recepten die al genoemd zijn uit
         #
         # recipe_ids_uniek = []

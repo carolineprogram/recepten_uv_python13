@@ -2,6 +2,7 @@
 import streamlit as st
 from utils import get_recipe_w_recipe_id, update_recipe, update_ingredients
 from form_snippets import fill_in_recipe
+from loguru import logger
 
 def unclick_button():
     st.session_state.clicked = False

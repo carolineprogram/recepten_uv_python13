@@ -1,6 +1,6 @@
 #This file will handle de hoofdquery run_query.
 
-from db import get_connection, get_psycopg2_connection
+from db import get_connection
 
 def run_query(query, table, data=None, where=None, order=None, in_table_in_record = None, in_=None):
     """

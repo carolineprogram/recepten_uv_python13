@@ -2,8 +2,30 @@
 #from db import run_query
 import streamlit as st
 
-from run_query import run_query
 from loguru import logger
+from db import get_psycopg2_connection
+from collections import defaultdict
+
+from run_query import run_query
+
+def bundel_tuple_op_eerste_veld(input_tuple):
+    # Groepeer op het eerste veld
+    groups = defaultdict(list)
+    for item in input_tuple:
+        key = item[0]
+        groups[key].append(item)
+
+    # Maak de nieuwe array
+    result = []
+    for key, group in groups.items():
+        # Bewaar de eerste 7 velden van de eerste tuple in de groep
+        base = group[0][:7]
+        # Bundel alle laatste velden in een tuple
+        last_values = tuple(item[7] for item in group)
+        # Voeg toe aan het resultaat
+        result.append(base + (last_values,))
+
+    return(result)
 #TODO: tabel recepten_IngredientBeschikbaar gemaakt - en kolommen 'hele_jaar' en maanden 'jan -> dec' gewist.
 """
 SELECT-queries
@@ -42,23 +64,16 @@ def get_all_recipe_names():
     return run_query("select", "recepten_Recepten", ["recept_id", "Naam"], order="Naam")
 
 def get_recipes_with_ingredient_ids(ingredient_ids):
-    """
-    Equivalent voor SELECT rec.* FROM "recepten_Recepten" as rec LEFT JOIN "recepten_Recept_Ingredient" as RI ON rec.recept_id = RI.recept_id WHERE RI.ingredient_id IN (13, 14, 23, 27)"
-    """
-    recipes = []
-    for i in ingredient_ids:
-        recipes_all = run_query("select", "recepten_Recepten, recepten_Recept_Ingredient",["*"], where = {"recepten_Recept_Ingredient.ingredient_id": i})
-        recipes.append((recipes_all))
-    return recipes
-    #     recipe_ids_query = run_query(query, (ingredient_id,))
-    #     recipe_ids.append([id for recipe_ids_query[0] in recipe_ids_query for id in recipe_ids_query[0]])
+    ingredients = (','.join(map(str, ingredient_ids)))
+    select_query = f'SELECT rec.*, RI.ingredient_id FROM "recepten_Recepten" as rec LEFT JOIN "recepten_Recept_Ingredient" as RI ON rec.recept_id = RI.recept_id WHERE RI.ingredient_id IN ({ingredients})'
+    cursor = get_psycopg2_connection()
+    cursor.execute(select_query)
+    recipes = cursor.fetchall()
 
-    pass
+    return bundel_tuple_op_eerste_veld(recipes)
 
 def get_recipes_w_bron_id(bron_id):
     return run_query("select", "recepten_Recepten", ["*"], where = {"Bron": bron_id})
-
-
 
 def get_types_w_recipe_id(recipe_id):
     """
@@ -109,26 +124,40 @@ def get_ingredienttype(type_id):
     else:
         return None  # Return None if ingredient not found
 
-def get_ingredients(recipe_id):
+def get_ingredients(recipe_id:int, return_modus = "full") -> list[int]:
     """
     Equivalent to "SELECT ingredient_id FROM recepten_Recept_Ingredient WHERE recept_id = recipe_id"
     """
     ingredient_ids = run_query("select", "recepten_Recept_Ingredient", ["ingredient_id"],
                                where={"recept_id": recipe_id}, order="ingredient_id")
 
-    ingredients = []
-    for i in ingredient_ids.data:
-        ingredient_id = i["ingredient_id"]
-        """
-        Equivalent to "SELECT * FROM recepten_Ingredient WHERE ingredient_id = ingredient_id"
-        """
-        ingredient_details = run_query("select", "recepten_Ingredient", "*", where={"ingredient_id": ingredient_id})
-        try:
-            for j in ingredient_details.data:
-                ingredients.append(j)
-        except:
-            ingredients = []
-    return ingredients
+    if return_modus == "full":
+        #Geeft zowel ids als naam terug
+        ingredients = []
+        for i in ingredient_ids.data:
+            ingredient_id = i["ingredient_id"]
+            """
+            Equivalent to "SELECT * FROM recepten_Ingredient WHERE ingredient_id = ingredient_id"
+            """
+            ingredient_details = run_query("select", "recepten_Ingredient", "*", where={"ingredient_id": ingredient_id})
+            try:
+                for j in ingredient_details.data:
+                    ingredients.append(j)
+            except:
+                ingredients = []
+        return ingredients
+    elif return_modus == "ids":
+        #Geeft enkel ids terug
+        return [r["ingredient_id"] for r in ingredient_ids.data]
+
+
+def get_recipe_ingredients(recipe_id: int) -> list[int]:
+    """Return a list of ingredient_id values for the given recipe_id."""
+    rows = run_query(
+        "select", "recepten_Recept_Ingredient", ["ingredient_id"],
+        where={"recept_id": recipe_id}
+    )
+
 
 def get_all_ingredients():
     """
@@ -136,12 +165,31 @@ def get_all_ingredients():
     """
     return run_query("select", "recepten_Ingredient", "*").data
 
-
+@logger.catch()
 def get_all_ingredients_in_month(month):
     """
-    SELECT ingredient_id, ingredient, type FROM ingredient WHERE hele_jaar = '1' OR {month} = '1' ORDER BY ingredient"
+    SELECT t1.ingredient_id, t1.ingredient, t1.type FROM recepten_IngredientBeschikbaar as t2 INNER JOIN recepten_Ingredient as t1
+    ON t1.ingredient_id = t2.ingredient_id WHERE t2.maand = month ORDER BY t1.ingredient"
     """
-    return [(row[1], row[2]) for row in run_query("select", "recepten_IngredientBeschikbaar", ["ingredient_id"], [("maand", month)])]
+    select_query = f'''
+        SELECT t1.* FROM "recepten_IngredientBeschikbaar" as t2 
+        INNER JOIN "recepten_Ingredient" as t1 
+        ON t1.ingredient_id = t2.ingredient_id 
+        WHERE t2.maand ={month} 
+        ORDER BY t1.ingredient
+    '''
+        
+    cursor = get_psycopg2_connection()
+    cursor.execute(select_query)
+    recipes_i_tuple = cursor.fetchall()
+    # Get column names from cursor.description
+    logger.info(cursor.description)
+    columns = [desc[0] for desc in cursor.description]
+
+    # Convert each row to a dictionary
+    recipes = [dict(zip(columns, row)) for row in recipes_i_tuple]
+
+    return recipes
 
 def get_ingredient_id(ingredient_naam):
     """

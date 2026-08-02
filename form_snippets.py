@@ -2,6 +2,7 @@ import streamlit as st
 import math
 from utils import get_all_recipe_names, get_all_types, get_types_w_recipe_id, get_all_ingredients, get_ingredients, insert_recipe, update_recipe, update_ingredients, update_types
 from streamlit_tags import st_tags
+from loguru import logger
 
 def select_recipe(form_key="Select Recipe", button_label="Info"):
     """ een dropdown selectie om een recept te kiezen  """
@@ -16,7 +17,7 @@ def select_recipe(form_key="Select Recipe", button_label="Info"):
             return recipe_names_to_id[selected_recipe_naam] #geeft recipe_id door
 
     return None
-
+@logger.catch
 def fill_in_recipe(form_key, button_label, recipe_id, recipe_name, beschrijving, bron, locatie, link, gemaakt):
     with st.form(key=form_key, clear_on_submit=True):
         new_title = st.text_input("Titel", value=recipe_name)
@@ -99,6 +100,9 @@ def fill_in_recipe(form_key, button_label, recipe_id, recipe_name, beschrijving,
                 succes = False
         try:
             update_ingredients(old_ingredients=input_old_ingredients, new_ingredients=selected_ingredients, recipe_id=recipe_id)
+            logger.info(input_old_ingredients)
+            logger.info(selected_ingredients)
+            logger.info(recipe_id)
             st.success(f"Ingredients aangepast")
         except Exception as e:
             st.text(f"Error bij update_ingredients: {e}")
@@ -113,3 +117,4 @@ def fill_in_recipe(form_key, button_label, recipe_id, recipe_name, beschrijving,
 
         return succes
     return None
+

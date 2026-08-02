@@ -1,6 +1,7 @@
 #This file will handle database connections.
 import streamlit as st
 import psycopg2
+from psycopg2.extras import RealDictCursor
 from supabase import create_client, Client
 
 # Supabase client
@@ -20,3 +21,8 @@ def get_psycopg2_connection():
         sslmode = 'require'
     )
     return conn.cursor()
+
+def close_psycopg2_connection():
+    if conn:
+        cursor.close()
+        conn.close()

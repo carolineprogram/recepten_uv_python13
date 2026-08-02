@@ -9,11 +9,11 @@ import streamlit as st
 import pandas as pd
 from utils import get_recipe_w_recipe_id, get_ingredients, get_types_w_recipe_id
 from form_snippets import select_recipe
-
-st.set_page_config(page_title="Kies recept op naam")
+from loguru import logger
 
 # dit is om variabelen in de link na het vraagteken te kunnen gebruiken
 query_params = st.query_params
+recept_id = query_params.get("recept_id")
 
 if "clicked"not in st.session_state:
     st.session_state["clicked"] = False
@@ -25,12 +25,11 @@ def recipe_info_form(recept_id):
     recipe_data = get_recipe_w_recipe_id(recept_id)
     recipe_id = recept_id
 
-
     df = pd.DataFrame(recipe_data.data)
     st.title(df["Naam"].iloc[0]) #df["Naam"] is een serie, als je enkel df["Naam"] vraagt dan krijg je index en dtype erbij
     st.markdown(df.to_markdown(index=False), unsafe_allow_html=True)
 
-    ingredients = get_ingredients(recipe_id)
+    ingredients = get_ingredients(recipe_id, return_status = "full")
     st.markdown('<h3><strong>Ingrediënten</strong></h3>', unsafe_allow_html=True)
 
     if len(ingredients) > 0:

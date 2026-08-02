@@ -3,6 +3,7 @@ import pandas as pd
 import streamlit as st
 
 from utils import get_all_receptbron, get_recipes_w_bron_id
+
 from loguru import logger
 
 
@@ -29,6 +30,7 @@ def select_receptbron_form():
         if df.empty is False:
             df['Naam'] = df.apply(lambda row: f"[{row['Naam']}](info_recipe_form?recept_id={row['recept_id']})", axis=1)
             st.markdown(df.sort_values("Naam").to_markdown(index=False), unsafe_allow_html=True)
+
         else:
             st.write("Geen recepten gevonden voor dit type.")
 
