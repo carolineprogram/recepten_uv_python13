@@ -29,7 +29,7 @@ def recipe_info_form(recept_id):
     st.title(df["Naam"].iloc[0]) #df["Naam"] is een serie, als je enkel df["Naam"] vraagt dan krijg je index en dtype erbij
     st.markdown(df.to_markdown(index=False), unsafe_allow_html=True)
 
-    ingredients = get_ingredients(recipe_id, return_status = "full")
+    ingredients = get_ingredients(recipe_id, return_modus = "full")
     st.markdown('<h3><strong>Ingrediënten</strong></h3>', unsafe_allow_html=True)
 
     if len(ingredients) > 0:

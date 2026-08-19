@@ -1,6 +1,7 @@
 import streamlit as st
-import psycopg2
+
 from supabase import create_client, Client
+from db import get_connection
 
 # Supabase client
 supabase_url = st.secrets['supabase']["SUPABASE_URL"]
@@ -8,18 +9,13 @@ supabase_key = st.secrets['supabase']["SUPABASE_KEY"]
 supabase = create_client(supabase_url, supabase_key)
 
 # psycopg2 connection
-conn = psycopg2.connect(
-    dbname=st.secrets['supabase']["DB_NAME"],
-    user=st.secrets['supabase']["DB_USER"],
-    password=st.secrets['supabase']["DB_PASSWORD"],
-    host=st.secrets['supabase']["DB_HOST"],
-    port=st.secrets['supabase']["DB_PORT"],
-    sslmode = 'require'
-)
-cursor = conn.cursor()
+# zie db.py
+
+conn = get_connection()  # Get connection
 
 # Fetch data using Supabase client
-data = supabase.table("recepten_Recepten").select("*").execute()
+data = conn.table("recepten_Recepten").insert({"Naam": 'Artisjokken'}).execute()
+
 st.write("Data from Supabase client:", data)
 
 # Fetch data using psycopg2

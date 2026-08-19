@@ -1,6 +1,6 @@
 import streamlit as st
 import math
-from utils import get_all_recipe_names, get_all_types, get_types_w_recipe_id, get_all_ingredients, get_ingredients, insert_recipe, update_recipe, update_ingredients, update_types
+from utils import get_all_recipe_names, get_all_types, get_types_w_recipe_id, get_all_ingredients, get_ingredients, insert_recipe, update_recipe, update_ingredients, update_types, get_all_receptbron
 from streamlit_tags import st_tags
 from loguru import logger
 
@@ -17,15 +17,33 @@ def select_recipe(form_key="Select Recipe", button_label="Info"):
             return recipe_names_to_id[selected_recipe_naam] #geeft recipe_id door
 
     return None
+
 @logger.catch
 def fill_in_recipe(form_key, button_label, recipe_id, recipe_name, beschrijving, bron, locatie, link, gemaakt):
     with st.form(key=form_key, clear_on_submit=True):
         new_title = st.text_input("Titel", value=recipe_name)
         new_beschrijving = st.text_area("Beschrijving", value=beschrijving)
-        new_bron = st.text_input("Bron", value=bron)
+
+        bron_data = get_all_receptbron().data
+        bron_data_name = [row["bron"] for row in bron_data]
+        bron_data_id = [row["bron_id"] for row in bron_data]
+        bron_data_dict = dict(zip(bron_data_id, bron_data_name))
+
+        # Convert dictionary keys to a list to locate the index
+        bron_keys_list = list(bron_data_dict.keys())
+        bron_default_index = bron_keys_list.index(bron) if bron in bron_keys_list else 0
+
+        new_bron_id = st.selectbox("Welk kookboek?", options=list(bron_data_dict.keys()),
+                                     index=bron_default_index,
+                                     format_func=lambda x: bron_data_dict[x])
+        new_bron = new_bron_id
+
         new_locatie = st.text_input("Locatie", value=locatie)
         new_link = st.text_input("Link", value=link)
         new_gemaakt = st.checkbox("Al gemaakt?", value=gemaakt)
+        # Postgres kan niet goed om met omzetting '' naar NULL -> zelf al omzetten, anders error 22P02
+        if new_gemaakt == '':
+            new_gemaakt = None
 
         # get_all_ingredients() return is tuple met eerst ingredient en dan type
         all_ingredients = get_all_ingredients()
@@ -84,6 +102,7 @@ def fill_in_recipe(form_key, button_label, recipe_id, recipe_name, beschrijving,
 
         if form_key == "Add Recipe":
             result = insert_recipe(new_title, new_beschrijving, new_bron, new_locatie, new_link, new_gemaakt)
+            logger.info(result)
             recipe_id = result.data[0]["recept_id"]
 
             input_old_ingredients = ''

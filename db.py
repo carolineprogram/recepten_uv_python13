@@ -1,13 +1,28 @@
 #This file will handle database connections.
+import os
 import streamlit as st
 import psycopg2
-from psycopg2.extras import RealDictCursor
+from dotenv import load_dotenv
 from supabase import create_client, Client
+
+# zorg dat credentials in .env gelezen kunnen worden
+load_dotenv()
 
 # Supabase client
 def get_connection():
-    supabase_url = st.secrets['supabase']["SUPABASE_URL"]
-    supabase_key = st.secrets['supabase']["SUPABASE_KEY"]
+    #eerst proberen om Streamlit secrets te gebruiken
+    try:
+        supabase_url = st.secrets['supabase']["SUPABASE_URL"]
+        supabase_key = st.secrets['supabase']["SUPABASE_KEY"]
+    except Exception: # terugvallen op environment variables (handig voor local development)
+        supabase_url = os.getenv("SUPABASE_URL")
+        supabase_key = os.getenv("SUPABASE_KEY")
+
+    if not supabase_url or not supabase_key:
+        raise RuntimeError(
+            "Supabase URL of key zijn niet beschikbaar via .env of via Streamlit sectrets"
+        )
+
     return create_client(supabase_url, supabase_key)
 
 # psycopg2 connection
@@ -26,3 +41,4 @@ def close_psycopg2_connection():
     if conn:
         cursor.close()
         conn.close()
+

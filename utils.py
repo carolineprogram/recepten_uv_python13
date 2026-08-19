@@ -183,7 +183,6 @@ def get_all_ingredients_in_month(month):
     cursor.execute(select_query)
     recipes_i_tuple = cursor.fetchall()
     # Get column names from cursor.description
-    logger.info(cursor.description)
     columns = [desc[0] for desc in cursor.description]
 
     # Convert each row to a dictionary
@@ -212,13 +211,21 @@ def get_all_type_ingredients():
 
     return set(result)
 
+def get_all_ingredients_fromtype(type_id):
+    """Return a list of ingredient_id values for the given type_id."""
+    rows = run_query(
+        "select", "recepten_Ingredient", ["ingredient_id", "ingredient"], where={"type_id": type_id}
+    )
+    return rows.data
+
 def get_all_receptbron():
     """
     Equivalent to "SELECT type_id, type FROM recepten_Recepttype ORDER BY type"
     """
     return run_query("select", "recepten_Receptbron", ["bron_id", "bron"], order="bron")
 
-
+def get_ingredientdetails(ingredient_id):
+    return run_query("select", "recepten_Ingredient", ["ingredient_id", "ingredient", "type_id", "steringredient"], where={"ingredient_id": ingredient_id})
 
 """
 INSERT-queries
@@ -240,9 +247,7 @@ except Exception as exception:
 """
 
 def insert_recipe(new_title, new_beschrijving, new_bron, new_locatie, new_link, new_gemaakt):
-    """
-    Equivalent voor "INSERT INTO recepten_recepten (Naam, Beschrijving, Bron, Gemaakt, Locatie) VALUES (name, description, source, made, location)"
-    """
+
     data = [{"Naam": new_title, "Beschrijving": new_beschrijving, "Bron": new_bron, "Locatie": new_locatie, "Link": new_link, "Gemaakt": new_gemaakt}]
 
     return run_query("insert", "recepten_Recepten", data)

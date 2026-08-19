@@ -44,7 +44,7 @@ def select_ingredient(ingredients_this_month=None):
                 type_name = get_ingredienttype(int(type_id))
             else:
                 type_name = 'Geen type'
-            st.subheader(type_name.str.capitalize())
+            st.subheader(type_name.capitalize())
             cols = st.columns(col_count)
             for k in range(len(df)):
                 col_index = k % col_count
