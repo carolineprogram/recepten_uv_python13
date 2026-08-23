@@ -1,5 +1,5 @@
 import streamlit as st
-import supabase
+from supabase import Client
 from db import get_connection
 
 supabase: Client = get_connection()
