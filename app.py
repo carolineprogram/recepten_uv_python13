@@ -15,9 +15,9 @@ def sign_up(email, password):
     except Exception as e:
         st.error(f"Registration failed: {e}")
 
-def sign_in(email, password, client: supabase.Client):
+def sign_in(email, password, client: Client):
     try:
-        user = client.auth.sign_in_with_password({'email': email, 'password': password})
+        user = supabase.auth.sign_in_with_password({'email': email, 'password': password})
         return user
     except Exception as e:
         st.error(f"Login failed: {e}")

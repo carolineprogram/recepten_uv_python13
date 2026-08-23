@@ -3,7 +3,7 @@ import os
 import streamlit as st
 import psycopg2
 from dotenv import load_dotenv
-from supabase import create_client, Client
+from supabase import create_client
 
 # zorg dat credentials in .env gelezen kunnen worden
 load_dotenv()
@@ -20,7 +20,7 @@ def get_connection():
 
     if not supabase_url or not supabase_key:
         raise RuntimeError(
-            "Supabase URL of key zijn niet beschikbaar via .env of via Streamlit sectrets"
+            "Supabase URL of key zijn niet beschikbaar via .env of via Streamlit secrets"
         )
 
     return create_client(supabase_url, supabase_key)
