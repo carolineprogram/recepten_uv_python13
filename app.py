@@ -2,7 +2,7 @@ import streamlit as st
 import supabase
 from db import get_connection
 
-supabase: CLient = get_connection()
+supabase: Client = get_connection()
 
 #login: Supabase zal enkel SMTP (mails verzenden) voorzien voor wie in het team zit: supabase.com/dashboard/org
 # zit je niet in het team dan krijg je de error Email address not authorized.
