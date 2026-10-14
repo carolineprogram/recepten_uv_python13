@@ -1,8 +1,11 @@
 #Hier maken we het mogelijk om een weekmenu samen te stellen
+import pathlib
+
 import streamlit as st
 import random
+import pandas as pd
 
-from utils import get_all_ingredients_in_month, get_all_recipe_names, get_ingredients, get_ingredient_naam, get_ingredientdetails
+from utils import get_all_ingredients_in_month, get_all_recipe_names, get_ingredients, get_ingredient_naam, get_ingredientdetails, get_recipe_w_recipe_name, load_css
 from datetime import date
 from loguru import logger
 
@@ -72,23 +75,66 @@ def maak_weekmenu():
                 del recipes_om_uit_te_kiezen[rec]
             except:
                 pass
-
     return random_recipes, gebruikte_steringredienten
 
+css_path = pathlib.Path("styles.css")
+load_css(css_path)
 
 if __name__ == "__main__":
     selected_recipes = maak_weekmenu()
     selected_recipe_names = selected_recipes[0]
     gebruikte_ingredienten = selected_recipes[1]
     st.write("Gebruikte ingredienten")
+    ingredienten = []
     for i, ingr in enumerate(gebruikte_ingredienten, start=1):
         ingr_naam = get_ingredient_naam(ingr)[0]["ingredient"]
-        st.write(f"{i}. {ingr_naam}")
+        ingredienten.append(ingr_naam)
+    st.write(" - ".join(ingredienten))
 
     st.write("🧑\u200d🍳 10 recepten met een spreiding van de steringredienten:")
-    for i, name in enumerate(selected_recipe_names, start=1):
-        string_recept = str(i) + ". " + name[0] + (" met: ")
+    recipe_data = []
+    for name in selected_recipe_names:
+        this_recipe = {}
+        this_recipe["Naam"] = name[0]
+        recipe_id = get_recipe_w_recipe_name(name[0]).data[0]["recept_id"]
+        this_recipe["recept_id"] = recipe_id
+        recipe_ingredients = []
         for ingr in name[1]:
-            string_recept += get_ingredient_naam(ingr)[0]["ingredient"] + ", "
-        st.write(string_recept)
+            ingr_naam = get_ingredient_naam(ingr)[0]["ingredient"]
+            if ingr in ingredienten:
+                recipe_ingredients.append(f'{ingr_naam}')
+            else:
+                recipe_ingredients.append(f'{ingr_naam}')
+        this_recipe["Ingredienten"] = ", ".join(recipe_ingredients)
+        recipe_data.append(this_recipe)
 
+    df = pd.DataFrame(recipe_data)
+    if df.empty is False:
+        # In tabelvorm met linken
+        #df['Naam'] = df.apply(lambda row: f"[{row['Naam']}](info_recipe_form?recept_id={row['recept_id']})", axis=1)
+        #st.markdown(df.sort_values("Naam").to_markdown(index=False), unsafe_allow_html=True)
+        # Display each row as a button
+
+        # Wrap the button in a div with a custom class
+        st.markdown(
+            """
+            <div class="recipe-button">
+                <style>
+                    .recipe-button { margin-bottom: 20px; }
+                </style>
+            """,
+            unsafe_allow_html=True
+        )
+
+        for _, row in df.iterrows():
+            recipe_name = row["Naam"]
+            recept_id = row["recept_id"]
+            recept_ingredienten = row["Ingredienten"]
+            # Create a link button for each recipe
+
+            st.link_button(
+            f"**{recipe_name}** met {recept_ingredienten}",
+            f"info_recipe_form?recept_id={recept_id}",
+                width="stretch",
+                key=f"recept_weekmenu{recept_id}"
+            )

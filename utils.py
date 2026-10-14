@@ -112,7 +112,7 @@ def get_all_types():
     """
     Equivalent to "SELECT type_id, type FROM recepten_Recepttype ORDER BY type"
     """
-    return run_query("select", "recepten_Recepttype", ["type_id", "type"], order="type")
+    return run_query("select", "recepten_Recepttype", ["type_id", "type"], order="type").data
 
 def get_ingredienttype(type_id):
     """
@@ -149,7 +149,6 @@ def get_ingredients(recipe_id:int, return_modus = "full") -> list[int]:
     elif return_modus == "ids":
         #Geeft enkel ids terug
         return [r["ingredient_id"] for r in ingredient_ids.data]
-
 
 def get_recipe_ingredients(recipe_id: int) -> list[int]:
     """Return a list of ingredient_id values for the given recipe_id."""
@@ -354,3 +353,6 @@ def update_ingredients(old_ingredients, new_ingredients, recipe_id):
     if insert_ingredients_ids:
         insert_ingredients_for_recipe(insert_ingredients_ids, recipe_id)
 
+def load_css(file_path):
+    with open(file_path) as f:
+        st.html(f"<style>{f.read()}</style>")

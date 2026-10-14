@@ -1,0 +1,13 @@
+/* Stijl voor alle link-buttons */
+.stLinkButton > button {
+    background-color: #4CAF50 !important;
+    color: white !important;
+    border-radius: 8px !important;
+    padding: 12px !important;
+    margin-bottom: 10px !important;
+}
+
+/* Style for buttons with custom class */
+.recipe-button > button {
+    background-color: #ff6347 !important; /* Tomato color */
+}

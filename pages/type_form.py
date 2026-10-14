@@ -7,18 +7,17 @@ from utils import get_all_types, get_recipe_id_w_type_id, get_recipe_w_recipe_id
 
 def select_type_form():
     types = get_all_types()
-    types_data = types.data
 
-    types_data_name = [row["type"] for row in types_data]
-    types_data_id = [row["type_id"] for row in types_data]
+    types_name = [row["type"] for row in types]
+    types_id = [row["type_id"] for row in types]
 
     with st.form(key="Select Type", clear_on_submit=True):
-        selected_type = st.selectbox("Welk type?", types_data_name)
+        selected_type = st.selectbox("Welk type?", types_name)
         submitted = st.form_submit_button("Submit")
 
     if submitted:
-        type_i_array = [i for i, j in enumerate(types_data_name) if j == selected_type]
-        type_id = types_data_id[type_i_array[0]]
+        type_i_array = [i for i, j in enumerate(types_name) if j == selected_type]
+        type_id = types_id[type_i_array[0]]
         recipe_ids = get_recipe_id_w_type_id(type_id)
 
         recepten = []

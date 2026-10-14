@@ -66,6 +66,7 @@ pages = {
     "Doe-pagina's": [
         st.Page("pages/add_recipe_form.py", title="Voeg recept toe"),
         st.Page("pages/maak_weekmenu.py", title="Maak weekmenu"),
+        st.Page("pages/update_ingredients.py", title="Ingrediënten aanpassen")
     ],
     "Nog opkuisen": [
         st.Page("pages/availability_form.py", title="Availability form"),

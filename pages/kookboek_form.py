@@ -2,7 +2,7 @@
 import pandas as pd
 import streamlit as st
 
-from utils import get_all_receptbron, get_recipes_w_bron_id
+from utils import get_all_receptbron, get_recipes_w_bron_id, get_ingredients
 
 from loguru import logger
 
@@ -25,7 +25,12 @@ def select_receptbron_form():
 
         recepten = []
         for i in recipes.data:
+            ingredients = get_ingredients(i["recept_id"], return_modus="full")
+            ingredient_names = [item["ingredient"] for item in ingredients]
+            i["recepten"] = ingredient_names
+
             recepten.append(i)
+
         df = pd.DataFrame(recepten)
         if df.empty is False:
             df['Naam'] = df.apply(lambda row: f"[{row['Naam']}](info_recipe_form?recept_id={row['recept_id']})", axis=1)
