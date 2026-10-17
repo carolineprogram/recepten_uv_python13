@@ -29,9 +29,11 @@ def vind_ingredients_seizoen():
     elif today_month + closest_month == 13:
         extra_month = 1
     ingredients_thismonth = get_all_ingredients_in_month(today_month)
+    st.write(ingredients_thismonth)
     ingredients_extramonth = get_all_ingredients_in_month(extra_month)
     ingredients_extra = [item for item in ingredients_extramonth if item not in ingredients_thismonth]
     ingredient_all = ingredients_thismonth + ingredients_extra
+    st.write(ingredient_all)
     return ingredient_all
 
 def random_choice(d):
