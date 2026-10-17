@@ -43,7 +43,7 @@ def maak_weekmenu():
     valid_recipe_names = []
     recipe_ingredient_map = {}
     all_recipe_names = get_all_recipe_names()
-    st.write(vind_ingredienst_seizoen())
+    st.write(vind_ingredients_seizoen())
     ingredients_thismonth = [r["ingredient_id"] for r in vind_ingredients_seizoen()]
     # kijk of er een ingredient van het seizoen voorkomt in het recept (1 ingredient is voldoende voor een True)
     for rec in all_recipe_names.data:
