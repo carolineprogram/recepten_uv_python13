@@ -29,11 +29,9 @@ def vind_ingredients_seizoen():
     elif today_month + closest_month == 13:
         extra_month = 1
     ingredients_thismonth = get_all_ingredients_in_month(today_month)
-    st.write(ingredients_thismonth)
     ingredients_extramonth = get_all_ingredients_in_month(extra_month)
     ingredients_extra = [item for item in ingredients_extramonth if item not in ingredients_thismonth]
     ingredient_all = ingredients_thismonth + ingredients_extra
-    st.write(ingredient_all)
     return ingredient_all
 
 def random_choice(d):
@@ -45,6 +43,7 @@ def maak_weekmenu():
     valid_recipe_names = []
     recipe_ingredient_map = {}
     all_recipe_names = get_all_recipe_names()
+    st.write(vind_ingredienst_seizoen())
     ingredients_thismonth = [r["ingredient_id"] for r in vind_ingredients_seizoen()]
     # kijk of er een ingredient van het seizoen voorkomt in het recept (1 ingredient is voldoende voor een True)
     for rec in all_recipe_names.data:
