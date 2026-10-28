@@ -114,6 +114,10 @@ def get_all_types():
     """
     return run_query("select", "recepten_Recepttype", ["type_id", "type"], order="type").data
 
+def get_all_ingredienttypes():
+    return run_query("select", "recepten_Ingredienttype", ["type_id", "type"], order="type").data
+
+
 def get_ingredienttype(type_id):
     """
     Equivalent to "SELECT type FROM recepten_Ingredienttype WHERE type_id = type_id"
@@ -225,6 +229,9 @@ def get_all_receptbron():
 
 def get_ingredientdetails(ingredient_id):
     return run_query("select", "recepten_Ingredient", ["ingredient_id", "ingredient", "type_id", "steringredient"], where={"ingredient_id": ingredient_id})
+
+def get_ingredientmonths(ingredient_id):
+    return run_query("select", "recepten_IngredientBeschikbaar", ["maand"], where={"ingredient_id": ingredient_id})
 
 """
 INSERT-queries
