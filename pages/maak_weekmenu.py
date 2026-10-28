@@ -13,8 +13,11 @@ from loguru import logger
 
 def vind_ingredients_seizoen():
     today = date.today()
+    logger.info(today)
     today_month = today.month
+    logger.info(today_month)
     today_day = today.day
+    logger.info(today_day)
     # als we in de eerste helft van de maand zitten dan worden de groenten van de vorige maand erbij genomen
     # als we in de tweede helft van de maand zitten dan nemen we de groenten van de volgende maand erbij
     if today_day < 16:
